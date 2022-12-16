@@ -1,6 +1,7 @@
 package xaes
 
 import (
+	"crypto/aes"
 	"crypto/sha256"
 
 	"golang.org/x/crypto/pbkdf2"
@@ -24,9 +25,10 @@ type XAES struct {
 
 func NewAES(options ...SetOption) (*XAES, error) {
 	x := &XAES{
-		iv:        []byte{}, // 默认无iv, 将自动随机生成iv,并把iv拼接在结果之前
-		formatKey: true,
-		keySize:   256,
+		iv:            []byte{},
+		formatKey:     true,
+		keySize:       256 / 8,
+		resultEncoder: nil,
 	}
 	x.padding = pkcs7Padding
 	x.unPadding = pkcs7UnPadding
@@ -42,16 +44,24 @@ func (x *XAES) option(options []SetOption) {
 	}
 }
 
-func (x *XAES) getIV() []byte {
+func (x *XAES) getIVForEncrypt() ([]byte, bool) {
 	if len(x.iv) > 0 {
-		return x.iv
+		return x.iv, false
 	}
 
-	return pbkdf2.Key(_salt, _salt, 1, x.keySize, sha256.New)
+	return pbkdf2.Key(_salt, _salt, 1, aes.BlockSize, sha256.New), true
+}
+
+func (x *XAES) getIVForDecrypt(ciphertext []byte) ([]byte, []byte) {
+	if len(x.iv) > 0 {
+		return x.iv, ciphertext
+	}
+	size := aes.BlockSize
+	return ciphertext[:size], ciphertext[size:]
 }
 
 // 加密
-func (x *XAES) Encrypt(key, plaintext []byte, options ...SetOption) {
+func (x *XAES) Encrypt(key, plaintext []byte, options ...SetOption) []byte {
 	x.option(options)
 
 	// 格式化key
@@ -60,16 +70,46 @@ func (x *XAES) Encrypt(key, plaintext []byte, options ...SetOption) {
 	}
 
 	// 处理iv
-	iv := x.getIV()
+	iv, autoIV := x.getIVForEncrypt()
 
+	// 填充
+	plaintext = x.padding(plaintext)
+
+	// 加密
+	ciphertext := AesEncryptCBC(plaintext, key, iv)
+
+	// 附加iv
+	if autoIV {
+		ciphertext = append(iv, ciphertext...)
+	}
+
+	// 编码结果
+	if x.resultEncoder != nil {
+		ciphertext = x.resultEncoder(ciphertext)
+	}
+
+	return ciphertext
 }
 
 // 解密
-func (x *XAES) Decrypt(key, ciphertext []byte, options ...SetOption) {
+func (x *XAES) Decrypt(key, ciphertext []byte, options ...SetOption) []byte {
 	x.option(options)
+
+	// 格式化key
 	if x.formatKey {
 		key = x.toFormatKey(key)
 	}
+
+	// 处理iv
+	iv, ciphertext := x.getIVForDecrypt(ciphertext)
+
+	// 解密
+	plaintext := AesDecryptCBC(ciphertext, key, iv)
+
+	// 移除填充
+	plaintext = x.unPadding(plaintext)
+
+	return plaintext
 }
 
 func (x *XAES) toFormatKey(key []byte) []byte {

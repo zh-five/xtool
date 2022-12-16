@@ -18,15 +18,8 @@ func SetPKCS7Padding() SetOption {
 // NoPadding 和 ZeroPadding
 func SetZeroPadding() SetOption {
 	return func(x *XAES) {
-		x.padding = pkcs7Padding
-		x.unPadding = pkcs7UnPadding
-	}
-}
-
-func SetNoPadding() SetOption {
-	return func(x *XAES) {
-		x.padding = pkcs7Padding
-		x.unPadding = pkcs7UnPadding
+		x.padding = zeroPadding
+		x.unPadding = zeroUnPadding
 	}
 }
 
@@ -37,13 +30,13 @@ func setAESSize(size int) SetOption {
 }
 
 func SetAES128() SetOption {
-	return setAESSize(128)
+	return setAESSize(128 / 8)
 }
 func SetAES192() SetOption {
-	return setAESSize(192)
+	return setAESSize(192 / 8)
 }
 func SetAES256() SetOption {
-	return setAESSize(256)
+	return setAESSize(256 / 8)
 }
 
 // 加密结果使用base64编码
@@ -60,8 +53,6 @@ func SetResultBase64() SetOption {
 // 加密结果不编码
 func SetResultNil() SetOption {
 	return func(x *XAES) {
-		x.resultEncoder = func(b []byte) []byte {
-			return b
-		}
+		x.resultEncoder = nil
 	}
 }
