@@ -23,18 +23,18 @@ type XAES struct {
 	//model     func()              //加密模式 （CBC、ECB、CTR、OCF、CFB）
 }
 
-func NewAES(options ...SetOption) (*XAES, error) {
+func NewAES(options ...SetOption) *XAES {
 	x := &XAES{
 		iv:              []byte{},
 		formatKey:       true,
-		keySize:         256 / 8,
+		keySize:         128 / 8,
 		ciphertextCoder: &CiphertextBase64{},
 	}
 	x.paddinger = new(PKCS7Pading)
 
 	x.option(options)
 
-	return x, nil
+	return x
 }
 
 func (x *XAES) option(options []SetOption) {
