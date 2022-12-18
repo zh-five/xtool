@@ -9,7 +9,7 @@ import (
 )
 
 func TestXAES(t *testing.T) {
-	x, _ := NewAES(
+	x := NewAES(
 		SetAES128(),
 		//SetCiphertextNil(),
 	)
@@ -47,7 +47,7 @@ func TestXAES(t *testing.T) {
 			for code := range mResult {
 				for iv := range mIV {
 					for i := 0; i < 4; i++ {
-						x, _ := NewAES(mSize[size], mPadding[pad], mResult[code], mIV[iv])
+						x := NewAES(mSize[size], mPadding[pad], mResult[code], mIV[iv])
 
 						tests = append(tests, args{
 							name:      fmt.Sprintf("AES%s/%s/%s/%s-%d", size, pad, code, iv, i),
@@ -90,4 +90,46 @@ func randBytes(n int) []byte {
 func randInt(min, max int64) int64 {
 	p, _ := rand.Prime(rand.Reader, 32)
 	return p.Int64()%(max-min) + min
+}
+
+func TestXAES_Encrypt(t *testing.T) {
+	type args struct {
+		key       []byte
+		plaintext []byte
+		options   []SetOption
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "e1",
+			args: args{
+				key:       []byte("g0MW7KcyAX6DaEBT"),
+				plaintext: []byte("测试"),
+				options: []SetOption{
+					SetIv([]byte("7KcyAX6DaEBT5fsP")),
+					SetAES128(),
+					SetPaddinger(&PKCS7Pading{}),
+				},
+			},
+			want:    []byte("hRyNibUesvor7UDJCTM+6w=="),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			x := NewAES(tt.args.options...)
+			got, err := x.Encrypt(tt.args.key, tt.args.plaintext)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("XAES.Encrypt() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("XAES.Encrypt() = %s, want %s", got, tt.want)
+			}
+		})
+	}
 }
