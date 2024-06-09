@@ -1,9 +1,3 @@
-# xtool
-go 常用工具封装
-
-
-# crypto/xaes 简化go aes算法调用
-```go 
 package main
 
 import (
@@ -41,5 +35,3 @@ func main() {
 
 	fmt.Printf("text : %s\ntext1: %s\n", text, text2)
 }
-
-```

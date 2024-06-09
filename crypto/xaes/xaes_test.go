@@ -32,9 +32,9 @@ func TestXAES(t *testing.T) {
 		"ZeroPading":  SetPaddinger(&ZeroPading{}),
 	}
 	// 结果编码方式
-	mResult := map[string]SetOption{
-		"ciphertextBase64": SetCiphertextBase64(),
-		"ciphertextNil":    SetCiphertextNil(),
+	mResult := map[string]CiphertextCoder{
+		"ciphertextBase64": &CiphertextBase64{},
+		"ciphertextNil":    nil,
 	}
 	// 是否随机生成iv
 	mIV := map[string]SetOption{
@@ -47,7 +47,7 @@ func TestXAES(t *testing.T) {
 			for code := range mResult {
 				for iv := range mIV {
 					for i := 0; i < 4; i++ {
-						x := NewAES(mSize[size], mPadding[pad], mResult[code], mIV[iv])
+						x := NewAES(mSize[size], mPadding[pad], SetCiphertextCoder(mResult[code]), mIV[iv])
 
 						tests = append(tests, args{
 							name:      fmt.Sprintf("AES%s/%s/%s/%s-%d", size, pad, code, iv, i),
@@ -113,6 +113,7 @@ func TestXAES_Encrypt(t *testing.T) {
 					SetIv([]byte("7KcyAX6DaEBT5fsP")),
 					SetAES128(),
 					SetPaddinger(&PKCS7Pading{}),
+					SetCiphertextCoder(&CiphertextBase64{}),
 				},
 			},
 			want:    []byte("hRyNibUesvor7UDJCTM+6w=="),
