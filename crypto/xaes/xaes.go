@@ -20,19 +20,22 @@ type XAES struct {
 	keySize         int             //key位数, 128,192,256
 	ciphertextCoder CiphertextCoder //加密结果编码器
 	paddinger       Padinger        //填充方法
-	//model     func()              //加密模式 （CBC、ECB、CTR、OCF、CFB）
 }
 
 func NewAES(options ...SetOption) *XAES {
 	x := &XAES{
 		iv:              []byte{},
 		formatKey:       true,
-		keySize:         128 / 8,
-		ciphertextCoder: &CiphertextBase64{},
+		keySize:         256 / 8,
+		ciphertextCoder: nil,
+		paddinger:       new(PKCS7Pading),
 	}
-	x.paddinger = new(PKCS7Pading)
 
 	x.option(options)
+
+	if len(x.iv) > 0 {
+		x.iv = x.toFormatKey(x.iv, aes.BlockSize)
+	}
 
 	return x
 }
@@ -63,12 +66,10 @@ func (x *XAES) getIVForDecrypt(ciphertext []byte) (iv []byte, cip []byte) {
 }
 
 // 加密
-func (x *XAES) Encrypt(key, plaintext []byte, options ...SetOption) ([]byte, error) {
-	x.option(options)
-
+func (x *XAES) Encrypt(key, plaintext []byte) ([]byte, error) {
 	// 格式化key
 	if x.formatKey {
-		key = x.toFormatKey(key)
+		key = x.toFormatKey(key, x.keySize)
 	}
 
 	// 处理iv
@@ -94,12 +95,10 @@ func (x *XAES) Encrypt(key, plaintext []byte, options ...SetOption) ([]byte, err
 }
 
 // 解密
-func (x *XAES) Decrypt(key, ciphertext []byte, options ...SetOption) ([]byte, error) {
-	x.option(options)
-
+func (x *XAES) Decrypt(key, ciphertext []byte) ([]byte, error) {
 	// 格式化key
 	if x.formatKey {
-		key = x.toFormatKey(key)
+		key = x.toFormatKey(key, x.keySize)
 	}
 
 	// 解码加密结果
@@ -119,10 +118,10 @@ func (x *XAES) Decrypt(key, ciphertext []byte, options ...SetOption) ([]byte, er
 	return plaintext, nil
 }
 
-func (x *XAES) toFormatKey(key []byte) []byte {
-	if len(key) == x.keySize {
+func (x *XAES) toFormatKey(key []byte, size int) []byte {
+	if len(key) == size {
 		return key
 	}
 
-	return pbkdf2.Key(key, _salt, 1, x.keySize, sha256.New)
+	return pbkdf2.Key(key, _salt, 15, size, sha256.New)
 }

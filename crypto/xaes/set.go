@@ -28,16 +28,8 @@ func SetAES256() SetOption {
 	return setAESSize(256 / 8)
 }
 
-// 加密结果使用base64编码
-func SetCiphertextBase64() SetOption {
+func SetCiphertextCoder(coder CiphertextCoder) SetOption {
 	return func(x *XAES) {
-		x.ciphertextCoder = &CiphertextBase64{}
-	}
-}
-
-// 加密结果不编码
-func SetCiphertextNil() SetOption {
-	return func(x *XAES) {
-		x.ciphertextCoder = nil
+		x.ciphertextCoder = coder
 	}
 }

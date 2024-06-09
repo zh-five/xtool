@@ -1,5 +1,5 @@
 module github.com/zh-five/xtool
 
-go 1.19
+go 1.16
 
-require golang.org/x/crypto v0.4.0 // indirect
+require golang.org/x/crypto v0.4.0
