@@ -21,6 +21,9 @@ func (p *PKCS7Pading) Pading(plaintext []byte) []byte {
 func (p *PKCS7Pading) UnPading(plaintext []byte) []byte {
 	length := len(plaintext)
 	unpadding := int(plaintext[length-1])
+	if length < unpadding {
+		return plaintext[:0]
+	}
 	return plaintext[:(length - unpadding)]
 }
 
